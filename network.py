@@ -23,8 +23,6 @@ class UpsampleLayer(nn.Module):
         self.scale_factor = scale_factor
 
     def forward(self, x):
-        # Tensor structure: [batch_size, channels, height, width]
-        # return x.repeat_interleave(self.scale_factor, dim=2).repeat_interleave(self.scale_factor, dim=3) # tile across dim=2 (height) and 3(width)
         return F.interpolate(x, scale_factor=self.scale_factor, mode='nearest')
 
 class DownsampleLayer(nn.Module):
@@ -41,14 +39,6 @@ class Concat(nn.Module):
         
     def forward(self, layers):
         return torch.cat(layers, dim=1)
-        
-class LeakyReLU(nn.Module):
-    def __init__(self, negative_slope=0.1):
-        super(LeakyReLU, self).__init__()
-        self.leaky_relu = nn.LeakyReLU(negative_slope=negative_slope)
-
-    def forward(self, x):
-        return self.leaky_relu(x)
         
 class Noise2Noise(nn.Module):
     def __init__(self):
@@ -97,12 +87,29 @@ class Noise2Noise(nn.Module):
         self.dec_conv1b = ConvLayer(64, 32)
         
         self.dec_conv1 = ConvLayer(32, 1, gain=1.0)
-            
+
+    def pad_to_multiple(self, x, multiple=64):
+        h, w = x.shape[-2:]
+        pad_h = (multiple - h % multiple) % multiple
+        pad_w = (multiple - w % multiple) % multiple
+    
+        pad_top = pad_h // 2
+        pad_bottom = pad_h - pad_top
+        pad_left = pad_w // 2
+        pad_right = pad_w - pad_left
+    
+        padding = (pad_left, pad_right, pad_top, pad_bottom)  # (left, right, top, bottom)
+        x_padded = F.pad(x, padding, mode='reflect')
+        return x_padded, padding
+
+    def unpad(self, x, padding):
+        pad_left, pad_right, pad_top, pad_bottom = padding
+        return x[..., pad_top : x.shape[-2] - pad_bottom,
+                     pad_left : x.shape[-1] - pad_right]
+    
     def forward(self, x):
-        if int(x.shape[-1])%2 == 1:
-            x = F.pad(x, (0, 1, 0, 1), "constant", -0.5)
+        x, padding = self.pad_to_multiple(x, multiple=64)
         
-        # x = F.pad(x, (0, 1, 0, 1), "constant", -0.5)
         input = x.unsqueeze(1)
         
         x = F.leaky_relu(self.enc_conv0(input), 0.1)
@@ -153,4 +160,6 @@ class Noise2Noise(nn.Module):
         x = F.leaky_relu(self.dec_conv1b(x), 0.1)
         
         x = self.dec_conv1(x)
-        return x.squeeze(1)[:, :-1, :-1]
+        x = self.unpad(x, padding)
+        
+        return x.squeeze(1)
