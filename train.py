@@ -69,6 +69,7 @@ class Trainer():
             self.results_dir.mkdir(parents=True, exist_ok=True)
             self.training_test_path.mkdir(parents=True, exist_ok=True)
             self.snapshot_path.mkdir(parents=True, exist_ok=True)
+            self.validation_test_path.mkdir(parents=True, exist_ok=True)
             if any(self.validation_test_path.iterdir()):
                 self.validation_test_path = get_unique_path(base_path = self.validation_test_path)
             self.validation_test_path.mkdir(parents=True, exist_ok=True)
