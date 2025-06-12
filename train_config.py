@@ -1,10 +1,9 @@
 from typing import List
-from train import main
+from train import launch, main
 from utils import get_unique_run_path, NoiseType
 from easydict import EasyDict
 from pathlib import Path
 from dataset import CTScans
-
 
 config = EasyDict()
 setup_config = EasyDict()
@@ -128,4 +127,8 @@ run_desc += f"[{', '.join(f'{k}={v}' for k, v in corruption_params.items())}]"
 if __name__ == "__main__":
     # print(run_desc)
     # print(config)
-    main(setup_config, config)
+
+    # Old 1-GPU version
+    # main(setup_config, config)
+
+    launch(setup_config, config)

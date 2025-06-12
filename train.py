@@ -48,6 +48,7 @@ class Trainer():
                  ) -> None:
         self.device = device
         self.model = model.to(device)
+        self.model = DDP(self.model, device_ids=[device])
         self.train_loader = train_loader
         self.valid_loader = valid_loader
         self.loss_fn = loss_fn
@@ -108,7 +109,7 @@ class Trainer():
     # Save model snapshot
     def _save_snapshot(self, epoch:int) -> None:
         snapshot = {}
-        snapshot["STATE_DICT"] = self.model.state_dict()
+        snapshot["STATE_DICT"] = self.model.module.state_dict()
         snapshot["CURR_EPOCH"] = epoch
         snapshot["OPTIMIZER_DICT"] = self.optimizer.state_dict()
 
@@ -131,7 +132,7 @@ class Trainer():
         self.model.load_state_dict(snapshot["STATE_DICT"])
         self.optimizer.load_state_dict(snapshot["OPTIMIZER_DICT"])
         self.logger.log(f"Loading Snapshot: %s.pth | Current Epoch: %d"%(self.snapshot_name, epoch+1))
-        self.start_epoch = epoch+1
+        self.start_epoch = epoch
     
     # Generate Example
     def _generate_example(self):
@@ -847,12 +848,18 @@ class Trainer():
 def load_dataset(ds_path: Path) -> CTScans:
     return torch.load(ds_path, weights_only=False)
 
-def prepare_dataloader(dataset: CTScans, batch_size:int, shuffle:bool=False) -> DataLoader:
-    return DataLoader(dataset, batch_size=batch_size, pin_memory=True, shuffle=shuffle, pin_memory_device='cuda')
+def prepare_dataloader(dataset: CTScans, batch_size:int, shuffle:bool=False, sampler=None) -> DataLoader:
+    return DataLoader(dataset, batch_size=batch_size, pin_memory=True, shuffle= shuffle if sampler is None else False, sampler=sampler)
 
-def main(setup_config:EasyDict, config:EasyDict):
+def setup_ddp(rank:int, n_gpus:int):
+    os.environ["MASTER_ADDR"] = "127.0.0.1"
+    os.environ["MASTER_PORT"] = "12355"
+    init_process_group(backend="nccl", rank=rank, world_size=n_gpus)
+    
+def main(rank:int, n_gpus:int, setup_config:EasyDict, config:EasyDict):
     # setup_config - Contains run related params like dir, paths, max_epochs, lr, etc.
     # config - Contains model training related params like corruption_type, corruption_params, etc.
+    setup_ddp(rank, n_gpus)
     model = Noise2Noise()
     optimizer = torch.optim.Adam(params=model.parameters(), lr=setup_config.lr)
     loss_fn = nn.MSELoss()
@@ -871,11 +878,11 @@ def main(setup_config:EasyDict, config:EasyDict):
     valid_dataset = load_dataset(setup_config.valid_dataset_path)
 
     # Data Loaders
-    train_loader = prepare_dataloader(dataset=train_dataset, batch_size=setup_config.batch_size, shuffle=True)
-    valid_loader = prepare_dataloader(dataset=valid_dataset, batch_size=setup_config.batch_size, shuffle=False)
+    train_loader = prepare_dataloader(dataset=train_dataset, batch_size=setup_config.batch_size, shuffle=True, sampler=DistributedSampler(train_dataset))
+    valid_loader = prepare_dataloader(dataset=valid_dataset, batch_size=setup_config.batch_size, shuffle=False, sampler=DistributedSampler(valid_dataset))
     
     # Initialize Trainer()
-    trainer = Trainer(device=0,
+    trainer = Trainer(device=rank,
                       model=model,
                       train_loader=train_loader,
                       valid_loader=valid_loader,
@@ -892,6 +899,12 @@ def main(setup_config:EasyDict, config:EasyDict):
 
     trainer._train(max_epochs=max_epochs)
 
+    destroy_process_group()
+
+def launch(setup_config:EasyDict, config:EasyDict):
+    n_gpus = torch.cuda.device_count()
+    mp.spawn(main, args=(n_gpus, setup_config, config), nprocs=n_gpus)
+    
 
 
 
