@@ -1,5 +1,4 @@
 import os
-import gc
 import json
 import csv
 import time
@@ -7,7 +6,6 @@ import random
 import warnings
 import numpy as np
 from easydict import EasyDict
-import argparse
 
 import matplotlib.pyplot as plt
 from typing import Callable, List, Optional, Union, Tuple, Dict, Any
@@ -19,7 +17,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.optim import lr_scheduler as lr_sch
-from torch.utils.data import DataLoader, Dataset, Subset
+from torch.utils.data import DataLoader, Subset
 from torchvision.utils import save_image
 from torchvision.transforms.functional import gaussian_blur
 from torch.utils.tensorboard import SummaryWriter
@@ -118,7 +116,7 @@ class Trainer():
         self.logger.log(f"Epoch {epoch}:\n\t Training Snapshot Saved at as [snapshot-{epoch+1}.pth] at {self.snapshot_path} \n\t Latest Snapshot Updated!")
 
     # Load model snapshot
-    def load_snapshot(self, snapshot_path:Path=None, snapshot_name:str=''):
+    def load_snapshot(self, snapshot_path:Path=None, snapshot_name:str=''): # type: ignore
         if snapshot_name == '':
             snapshot_name = self.snapshot_name
         if snapshot_path is None:

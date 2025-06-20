@@ -16,7 +16,7 @@ experiment_id = 55
 experiment_desc = "Full_seq_py"
 
 # Training Hyperparameters
-results_dir = Path("./results")
+results_dir = Path("../results")
 learning_rate = 0.0005
 max_epochs = 250
 batch_size = 32
@@ -29,7 +29,7 @@ snapshot_path = results_dir / "055-Python-script-test/2025-06-11_run-1"
 post_operation = 'fspec'
 
 # Dataset paths
-dataset_root_path = Path("./datasets")
+dataset_root_path = Path("../datasets")
 train_dataset = f"HQ_train_dataset_{100}_patch_{str(512)}_olap_{str(0.2)}.pth" # "HQ_eval_dataset_10.pth"
 valid_dataset = f"HQ_valid_dataset_{20}_patch_{str(512)}_olap_{str(0.2)}.pth" # "HQ_valid_dataset_5.pth"
 
