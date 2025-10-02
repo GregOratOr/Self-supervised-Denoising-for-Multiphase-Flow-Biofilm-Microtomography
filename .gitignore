@@ -2,3 +2,7 @@
 /Image Datasets
 /.ipynb_checkpoints
 /results
+/src/app/.ipynb_checkpoints
+/src/.ipynb_checkpoints
+/src/core/.ipynb_checkpoints
+*.pyc
