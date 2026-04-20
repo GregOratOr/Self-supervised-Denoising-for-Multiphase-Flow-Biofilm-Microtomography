@@ -853,7 +853,7 @@ def prepare_dataloader(dataset: CTScans, batch_size:int, shuffle:bool=False, sam
 
 def setup_ddp(rank:int, n_gpus:int):
     os.environ["MASTER_ADDR"] = "127.0.0.1"
-    os.environ["MASTER_PORT"] = "12355"
+    os.environ["MASTER_PORT"] = "12360"
     init_process_group(backend="nccl", rank=rank, world_size=n_gpus)
     
 def main(rank:int, n_gpus:int, setup_config:EasyDict, config:EasyDict):
@@ -903,6 +903,7 @@ def main(rank:int, n_gpus:int, setup_config:EasyDict, config:EasyDict):
 
 def launch(setup_config:EasyDict, config:EasyDict):
     n_gpus = torch.cuda.device_count()
+    print(f"Detected [{n_gpus}] GPUs.")
     mp.spawn(main, args=(n_gpus, setup_config, config), nprocs=n_gpus)
     
 

@@ -12,8 +12,8 @@ run_desc = ""
 ####################
 #################### Setup Config Hyperparameters ####################
 # Experiment
-experiment_id = 55
-experiment_desc = "Full_seq_py"
+experiment_id = 65
+experiment_desc = "Full_seq_ddp"
 
 # Training Hyperparameters
 results_dir = Path("./results")
@@ -21,9 +21,9 @@ learning_rate = 0.0005
 max_epochs = 250
 batch_size = 32
 lr_scheduler_type = 'constant' # 'constant' or 'plateau'
-load_checkpoint = False
-snapshot_name = "latest-snapshot"
-snapshot_path = results_dir / "055-Python-script-test/2025-06-11_run-1"
+load_checkpoint = True
+snapshot_name = "snapshot-140"
+snapshot_path = results_dir / "055-Full_seq_py/2025-06-11_run-0"
 
 # Post Processing
 post_operation = 'fspec'
